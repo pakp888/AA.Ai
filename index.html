@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A.A AI Official Chatbot</title>
+    <!-- Google Fonts for Urdu and general text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Noto Nastaliq Urdu', 'Poppins', sans-serif;
+            direction: rtl;
+            background: #eef1f5; /* Light greyish-blue background to match the screenshot feel */
+            min-height: 100vh;
+        }
+        .main-container {
+            max-width: 600px;
+            height: 100vh;
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #d1d5db; /* Light grey scrollbar thumb */
+            border-radius: 3px;
+        }
+        .input-box-container {
+            background: white;
+            border-top: 1px solid #e5e7eb; /* Light grey border */
+        }
+        .suggested-button {
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .user-bubble {
+            background-color: #3b82f6; /* Blue for user */
+            color: white;
+            border-bottom-right-radius: 0;
+        }
+        .bot-bubble {
+            background-color: #e5e7eb; /* Light gray for bot */
+            color: #1f2937;
+            border-bottom-left-radius: 0;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between antialiased">
+    <!-- Main container for the chat application -->
+    <div class="main-container flex flex-col w-full bg-white shadow-xl">
+        
+        <!-- Header area, matching the screenshot -->
+        <header class="p-6 text-center border-b border-gray-200">
+            <!-- Logo placeholder -->
+            <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">
+                AA AI
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                A.A AI Official
+            </h1>
+            <h2 class="text-sm text-gray-500 mb-2">
+                by Afnan Rizwan
+            </h2>
+            <p class="text-sm text-gray-600 px-4">
+                اردو اے آئی کا مقصد عام لوگوں کے لئے مصنوعی ذہانت کو آسان بنانا ہے.
+            </p>
+        </header>
+
+        <!-- Main chat container -->
+        <div id="chat-container" class="flex-grow flex flex-col p-4 overflow-y-auto space-y-4">
+            <!-- Initial welcome message from the bot -->
+            <div class="flex justify-start fade-in">
+                <div class="relative max-w-[75%] rounded-xl p-3 bot-bubble shadow-sm">
+                    <p>
+                        اسلام وعلیکم! میں A.A AI کا چیٹ بوٹ ہوں۔ میں آپ کے سوالوں کا اردو میں جواب دینے کے لیے موجود ہوں۔
+                    </p>
+                </div>
+            </div>
+            <!-- Suggested questions, matching the screenshot layout -->
+            <div id="suggested-questions" class="flex justify-center flex-wrap gap-2 mt-4">
+                <button class="suggested-button px-4 py-2 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                    مجھے اردو اے آئی کی ماسٹرکلاس کی لنک دو
+                </button>
+                <button class="suggested-button px-4 py-2 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                    اردو اے آئی کے سوشل میڈیا لنکس دو
+                </button>
+            </div>
+        </div>
+
+        <!-- Input area at the bottom -->
+        <div class="p-4 flex items-center space-x-2">
+            <input type="text" id="user-input" placeholder="Ask anything" class="flex-grow p-3 rounded-full border-2 border-gray-200 focus:outline-none focus:border-blue-500 bg-white text-gray-800 text-right">
+            
+            <button id="send-button" class="bg-blue-600 text-white p-3 rounded-full shadow-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+
+            <!-- Loading indicator -->
+            <div id="loading-indicator" class="hidden animate-pulse">
+                <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin text-gray-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const suggestedQuestions = document.getElementById('suggested-questions');
+        let chatHistory = [];
+
+        // Function to create a new chat message bubble
+        function createMessage(text, isUser) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('flex', 'fade-in', 'mt-2');
+            messageElement.classList.add(isUser ? 'justify-end' : 'justify-start');
+
+            const bubbleElement = document.createElement('div');
+            bubbleElement.classList.add('relative', 'max-w-[75%]', 'rounded-xl', 'p-3', 'shadow-sm', 'break-words');
+            bubbleElement.classList.add(isUser ? 'user-bubble' : 'bot-bubble');
+            
+            bubbleElement.innerHTML = `<p>${text}</p>`;
+
+            messageElement.appendChild(bubbleElement);
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Function to call the Gemini API
+        async function fetchGeminiResponse(prompt) {
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            // The API key is automatically provided by the Canvas environment.
+            // You don't need to insert it manually.
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                // Show loading indicator
+                loadingIndicator.classList.remove('hidden');
+                sendButton.disabled = true;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                // Hide loading indicator
+                loadingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    
+                    // Add bot's response to chat history and UI
+                    chatHistory.push({ role: "model", parts: [{ text: text }] });
+                    createMessage(text, false);
+                } else {
+                    createMessage("معاف کیجیے، میں جواب نہیں دے سکا۔", false);
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                loadingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+                createMessage("کچھ غلط ہو گیا ہے۔ براہ کرم دوبارہ کوشش کریں۔", false);
+            }
+        }
+
+        // Function to handle the chat logic
+        async function sendMessage() {
+            const userText = userInput.value.trim();
+            if (userText === "") return;
+
+            // Hide suggested questions after the first message
+            if (suggestedQuestions) {
+                suggestedQuestions.style.display = 'none';
+            }
+
+            // Display user's message
+            createMessage(userText, true);
+
+            // Clear input field
+            userInput.value = '';
+
+            // Call the Gemini API
+            await fetchGeminiResponse(userText);
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Event listeners for suggested questions
+        if (suggestedQuestions) {
+            suggestedQuestions.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', () => {
+                    userInput.value = button.textContent;
+                    sendMessage();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
